@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { Sky } from "three/addons/objects/Sky.js";
 import { Timer } from "three/addons/misc/Timer.js";
 import GUI from "lil-gui";
 
@@ -35,7 +36,6 @@ const floorDisplacementTexture = textureLoader.load(
 );
 
 floorColorTexture.colorSpace = THREE.SRGBColorSpace;
-
 floorColorTexture.repeat.set(8, 8);
 floorARMTexture.repeat.set(8, 8);
 floorNormalTexture.repeat.set(8, 8);
@@ -129,26 +129,17 @@ roofARMTexture.wrapT = THREE.RepeatWrapping;
 roofNormalTexture.wrapT = THREE.RepeatWrapping;
 //Door
 // Roof
-const doorColorTexture = textureLoader.load(
-  "./door/wooden_garage_door_1k/wooden_garage_door_diff_1k.jpg"
+const doorColorTexture = textureLoader.load("./door/color.jpg");
+const doorAlphaTexture = textureLoader.load("./door/alpha.jpg");
+const doorNormalTexture = textureLoader.load("./door/normal.jpg");
+const doorAmbientOcclusionTexture = textureLoader.load(
+  "./door/ambientOcclusion.jpg"
 );
-const doorARMTexture = textureLoader.load(
-  "./door/wooden_garage_door_1k/wooden_garage_door_arm_1k.jpg"
-);
-const doorNormalTexture = textureLoader.load(
-  "./door/wooden_garage_door_1k/wooden_garage_door_nor_gl_1k.jpg"
-);
+const doorHeightTexture = textureLoader.load("./door/height.jpg");
+const doorMetalnessTexture = textureLoader.load("./door/metalness.jpg");
+const doorRoughnessTexture = textureLoader.load("./door/roughness.jpg");
 doorColorTexture.colorSpace = THREE.SRGBColorSpace;
-doorColorTexture.repeat.set(2, 1);
-doorARMTexture.repeat.set(2, 1);
-doorNormalTexture.repeat.set(2, 1);
 
-doorColorTexture.wrapS = THREE.RepeatWrapping;
-doorARMTexture.wrapS = THREE.RepeatWrapping;
-doorNormalTexture.wrapS = THREE.RepeatWrapping;
-doorColorTexture.wrapT = THREE.RepeatWrapping;
-doorARMTexture.wrapT = THREE.RepeatWrapping;
-doorNormalTexture.wrapT = THREE.RepeatWrapping;
 // Bush
 const bushColorTexture = textureLoader.load(
   "./bush/rocks_ground_02_1k/rocks_ground_02_col_1k.jpg"
@@ -229,17 +220,23 @@ house.add(roof);
 
 //Door
 const door = new THREE.Mesh(
-  new THREE.PlaneGeometry(2.2, 2.2),
+  new THREE.PlaneGeometry(2.2, 2.2, 100, 100),
   new THREE.MeshStandardMaterial({
     transparent: true,
+    // wireframe: true,
     map: doorColorTexture,
-    aoMap: doorARMTexture,
-    roughnessMap: doorARMTexture,
-    metalnessMap: doorARMTexture,
+    alphaMap: doorAlphaTexture,
+    aoMap: doorAmbientOcclusionTexture,
+    displacementMap: doorHeightTexture,
+    metalnessMap: doorMetalnessTexture,
+    roughnessMap: doorRoughnessTexture,
     normalMap: doorNormalTexture,
+    displacementScale: 0.2,
+    // color: "#344B40",
+    displacementBias: -0.04,
   })
 );
-door.position.y = 2.2 * 0.5;
+door.position.y = 2 * 0.5;
 door.position.z = 2 + 0.001;
 house.add(door);
 
@@ -314,20 +311,23 @@ for (let i = 0; i < 30; i++) {
  * Lights
  */
 // Ambient light
-const ambientLight = new THREE.AmbientLight("#ffffff", 0.5);
+const ambientLight = new THREE.AmbientLight("#86cdff", 0.275);
 scene.add(ambientLight);
 
 // Directional light
-const directionalLight = new THREE.DirectionalLight("#ffffff", 1.5);
+const directionalLight = new THREE.DirectionalLight("#86cdff", 1);
 directionalLight.position.set(3, 2, -8);
 scene.add(directionalLight);
-// Directional light helper (instead of ambient light)
-const directionalLightHelper = new THREE.CameraHelper(
-  directionalLight.shadow.camera
-);
-directionalLightHelper.visible = false;
-scene.add(directionalLightHelper);
 
+const doorLight = new THREE.PointLight("#ff7d46", 2);
+house.add(doorLight);
+doorLight.position.set(0, 2.2, 2.5);
+
+// Ghosts
+const ghost1 = new THREE.PointLight("#8800ff", 6);
+const ghost2 = new THREE.PointLight("#ff0088", 6);
+const ghost3 = new THREE.PointLight("#ff0000", 6);
+scene.add(ghost1, ghost2, ghost3);
 /**
  * Sizes
  */
@@ -360,6 +360,11 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   100
 );
+const directionalLightCameraHelper = new THREE.CameraHelper(
+  directionalLight.shadow.camera
+);
+directionalLightCameraHelper.visible = false;
+scene.add(directionalLightCameraHelper);
 camera.position.x = 4;
 camera.position.y = 2;
 camera.position.z = 5;
@@ -377,6 +382,59 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+/**
+ * Shadows
+ */
+
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+directionalLight.castShadow = true;
+walls.castShadow = true;
+ghost1.castShadow = true;
+ghost2.castShadow = true;
+ghost3.castShadow = true;
+roof.castShadow = true;
+graveGroup.children.forEach((children) => {
+  children.castShadow = true;
+});
+
+walls.receiveShadow = true;
+floor.receiveShadow = true;
+
+//Mapping
+directionalLight.shadow.mapSize.width = 256;
+directionalLight.shadow.mapSize.height = 256;
+directionalLight.shadow.camera.top = 8;
+directionalLight.shadow.camera.right = 8;
+directionalLight.shadow.camera.bottom = -8;
+directionalLight.shadow.camera.left = -8;
+directionalLight.shadow.camera.near = 1;
+directionalLight.shadow.camera.far = 18;
+
+ghost1.shadow.mapSize.width = 256;
+ghost1.shadow.mapSize.height = 256;
+ghost1.shadow.camera.far = 10;
+ghost2.shadow.mapSize.width = 256;
+ghost2.shadow.mapSize.height = 256;
+ghost2.shadow.camera.far = 10;
+ghost3.shadow.mapSize.width = 256;
+ghost3.shadow.mapSize.height = 256;
+ghost3.shadow.camera.far = 10;
+
+// Sky
+const sky = new Sky();
+// sky.scale.set(100, 100, 100);
+sky.scale.setScalar(1000);
+scene.add(sky);
+sky.material.uniforms["turbidity"].value = 10;
+sky.material.uniforms["rayleigh"].value = 1;
+sky.material.uniforms["mieCoefficient"].value = 0.1;
+sky.material.uniforms["mieDirectionalG"].value = 0.95;
+sky.material.uniforms["sunPosition"].value.set(0.3, -0.038, -0.95);
+
+//Fog
+// scene.fog = new THREE.Fog("#ff0000", 1, 13); // color, near, far
+scene.fog = new THREE.FogExp2("#04343f", 0.1); // color, near, far
 
 /**
  * Animate
@@ -387,6 +445,32 @@ const tick = () => {
   // Timer
   timer.update();
   const elapsedTime = timer.getElapsed();
+
+  // Ghost animation
+  //Ghost 1
+  const ghost1Angle = -elapsedTime * 0.3;
+  ghost1.position.x = Math.cos(ghost1Angle) * 4.5;
+  ghost1.position.z = Math.sin(ghost1Angle) * 4.5;
+  ghost1.position.y =
+    Math.sin(ghost1Angle) *
+    Math.sin(ghost1Angle * 2.4) *
+    Math.sin(ghost1Angle * 3.45);
+  //Ghost 2
+  const ghost2Angle = elapsedTime * 0.25;
+  ghost2.position.x = Math.cos(ghost2Angle) * 6;
+  ghost2.position.z = Math.sin(ghost2Angle) * 6;
+  ghost2.position.y =
+    Math.sin(ghost2Angle) *
+    Math.sin(ghost2Angle * 2.4) *
+    Math.sin(ghost2Angle * 3.45);
+  //Ghost 3
+  const ghost3Angle = elapsedTime * 0.38;
+  ghost3.position.x = Math.cos(ghost3Angle) * 7;
+  ghost3.position.z = Math.sin(ghost3Angle) * 7;
+  ghost3.position.y =
+    Math.sin(ghost3Angle) *
+    Math.sin(ghost3Angle * 2.4) *
+    Math.sin(ghost3Angle * 3.45);
 
   // Update controls
   controls.update();
