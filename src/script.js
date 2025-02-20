@@ -127,6 +127,28 @@ roofNormalTexture.wrapS = THREE.RepeatWrapping;
 roofColorTexture.wrapT = THREE.RepeatWrapping;
 roofARMTexture.wrapT = THREE.RepeatWrapping;
 roofNormalTexture.wrapT = THREE.RepeatWrapping;
+//Door
+// Roof
+const doorColorTexture = textureLoader.load(
+  "./door/wooden_garage_door_1k/wooden_garage_door_diff_1k.jpg"
+);
+const doorARMTexture = textureLoader.load(
+  "./door/wooden_garage_door_1k/wooden_garage_door_arm_1k.jpg"
+);
+const doorNormalTexture = textureLoader.load(
+  "./door/wooden_garage_door_1k/wooden_garage_door_nor_gl_1k.jpg"
+);
+doorColorTexture.colorSpace = THREE.SRGBColorSpace;
+doorColorTexture.repeat.set(2, 1);
+doorARMTexture.repeat.set(2, 1);
+doorNormalTexture.repeat.set(2, 1);
+
+doorColorTexture.wrapS = THREE.RepeatWrapping;
+doorARMTexture.wrapS = THREE.RepeatWrapping;
+doorNormalTexture.wrapS = THREE.RepeatWrapping;
+doorColorTexture.wrapT = THREE.RepeatWrapping;
+doorARMTexture.wrapT = THREE.RepeatWrapping;
+doorNormalTexture.wrapT = THREE.RepeatWrapping;
 // Bush
 const bushColorTexture = textureLoader.load(
   "./bush/rocks_ground_02_1k/rocks_ground_02_col_1k.jpg"
@@ -208,7 +230,14 @@ house.add(roof);
 //Door
 const door = new THREE.Mesh(
   new THREE.PlaneGeometry(2.2, 2.2),
-  new THREE.MeshStandardMaterial()
+  new THREE.MeshStandardMaterial({
+    transparent: true,
+    map: doorColorTexture,
+    aoMap: doorARMTexture,
+    roughnessMap: doorARMTexture,
+    metalnessMap: doorARMTexture,
+    normalMap: doorNormalTexture,
+  })
 );
 door.position.y = 2.2 * 0.5;
 door.position.z = 2 + 0.001;
